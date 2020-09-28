@@ -1,0 +1,44 @@
+1
+
+INC:10
+
+8 0
+
+DOBRAR TAM:2
+
+INC:20
+
+219 1
+
+DOBRAR TAM:4
+
+REM:10
+
+8 0
+
+INC:15
+
+240 0
+
+INC:15
+
+240 1
+
+DOBRAR TAM:8
+
+REM:17
+
+212 -1
+
+BUS:42
+
+177 -1
+
+INC:42
+
+177 2
+
+INC:43
+
+84 4
+

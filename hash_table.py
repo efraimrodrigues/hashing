@@ -1,6 +1,8 @@
 #/usr/bin/python3
 
 #universe = 18.446.744.073.709.551.615
+import sys
+
 import numpy as np
 import math
 import random
@@ -8,30 +10,32 @@ import random
 class hash_table:
 
     def __init__(self, block_size = 8, e = 1, cleaning_threshold = 0.25):
-        self.q = 64 #Key size
-        self.block_size = block_size #Size of blocks the key will be split into
-        self.e = e #Doubling and halving constant parameter
-        self.table = []
-        self.n = 0 #Number of elements in the table
-        self.r = 0 #Number of elements removed from the table
-        self.cleaning_threshold = cleaning_threshold #Threshold parameter for cleaning the table
-        self.lookup = [] #Lookup tables used for hashing the key
+        self.__q = 64 #Key size
+        self.__block_size = block_size #Size of blocks the key will be split into
+        self.__e = e #Doubling and halving constant parameter
+        self.table = [None]
+        self.__n = 0 #Number of elements in the table
+        self.__r = 0 #Number of elements removed from the table
+        self.__cleaning_threshold = cleaning_threshold #Threshold parameter for cleaning the table
+        self.__lookup = [] #Lookup tables used for hashing the key
 
-        table_size = 2**self.block_size
-        for i in range(0, self.block_size):
-            self.lookup.append(random.sample(range(table_size), table_size))
+        self.debug = False #Debugging control
+
+        table_size = 2**self.__block_size
+        for i in range(0, self.__block_size):
+            self.__lookup.append(random.sample(range(table_size), table_size))
 
     def __bin(self, key):
         b = [int(i) for i in list('{0:0b}'.format(key))]
 
-        if len(b) < self.q:
-            b = [0] * (self.q - len(b)) + b
+        if len(b) < self.__q:
+            b = [0] * (self.__q - len(b)) + b
         
-        if len(b) > self.q:
+        if len(b) > self.__q:
             raise Exception("Invalid key size.")
 
-        #Breaks binary array into blocks of size self.block_size
-        b = [b[i:i + self.block_size] for i in range(0, len(b), self.block_size)]
+        #Breaks binary array into blocks of size self.__block_size
+        b = [b[i:i + self.__block_size] for i in range(0, len(b), self.__block_size)]
 
         return b
 
@@ -42,18 +46,18 @@ class hash_table:
         return x ^ y
 
     def __table(self, index, key):
-        return self.lookup[index][key]
+        return self.__lookup[index][key]
 
     def __resize(self, size):
         old_table = self.table
 
-        self.n = 0
-        self.r = 0
+        self.__n = 0
+        self.__r = 0
         self.table = [None] * size
 
         for element in old_table:
             if element != None and not math.isnan(element):
-                self.insert(element)
+                self.add(element)
 
     def __cleaning(self):
         self.__resize(len(self.table))
@@ -64,7 +68,7 @@ class hash_table:
     def __halving(self):
         self.__resize(math.ceil(len(self.table) / 2))
 
-    def hash(self, key):
+    def __hash(self, key):
         t = None
 
         bin_array = self.__bin(key)
@@ -77,71 +81,70 @@ class hash_table:
 
         return t
 
-    def insert(self, key):
-        self.n = self.n + 1
+    def add(self, key):
+        self.__n = self.__n + 1
 
         h = 0
         t = None
         m = len(self.table)
 
-        if m == 0:
-            t = 0
-            self.table.append(key)
+        h = self.__hash(key)
 
-        if m > 0:
-            h = self.hash(key)
+        t = h % m
+        i = 1
 
-            t = h % m
-            i = 1
+        #Linear probing
+        while self.table[t] != None and not math.isnan(self.table[t]):
+            t = (h + i) % m
+            i = i + 1
 
-            #Linear probing
-            while self.table[t] != None and not math.isnan(self.table[t]):
-                t = (h + i) % m
-                i = i + 1
+        self.table[t] = key
 
-            self.table[t] = key
-
+        doubling = False
         #Checks if it needs doubling
-        if m < (1 + self.e)*self.n:
-            print("Doubling")
+        if m < (1 + self.__e)*self.__n:
             self.__doubling()
             m = len(self.table)
+            doubling = True
 
-        return h, t
+        return [h, t, doubling, m]
 
-    def remove(self, key):
-        self.n = self.n - 1
+    def delete(self, key):
+        self.__n = self.__n - 1
 
-        h = self.hash(key)
+        h = self.__hash(key)
         m = len(self.table)
 
         t = h % m
         i = 1
 
         #Linear probing
-        while self.table[t] != key and math.isnan(self.table[t]):
+        while self.table[t] != None and self.table[t] != key and math.isnan(self.table[t]):
             t = (h + i) % m
             i = i + 1
 
         if self.table[t] == key:
             self.table[t] = float("NaN")
-            self.r = self.r + 1
+            self.__r = self.__r + 1
         else:
-            return h, -1
+            return [h, -1, False, False, m]
 
+        halving = False
+        cleaning = False
         #Checks if it needs halving
-        if self.n < m/4:
-            print("Halving.")
+        if self.__n < m/4:
             self.__halving()
+            halving = True
 
         #Checks if it needs cleaning
-        if self.r/m > self.cleaning_threshold:
-            print("Cleaning")
+        if self.__r/m > self.__cleaning_threshold:
             self.__cleaning
-        return h, t
+            cleaning = True
+
+        return [h, t, cleaning, halving, m]
 
     def search(self, key):
-        h = self.hash(key)
+        h = self.__hash(key)
         m = len(self.table)
 
         t = h % m
@@ -155,25 +158,40 @@ class hash_table:
                 i = i + 1
 
         if self.table[t] == key:
-            return h, t
+            return [h, t]
         else:
-            return h, -1
+            return [h, -1]
 
-hashing = hash_table()
-print(hashing.table)
-print(hashing.insert(5))
+output = open('output.txt', 'w')
 
-print(hashing.table)
-print(hashing.insert(8))
+table = hash_table()
 
-print(hashing.table)
-print(hashing.insert(5))
+output.write(str(len(table.table)) + "\n\n")
 
-print(hashing.table)
-print(hashing.insert(5))
+with open(sys.argv[1]) as fp:
+    for line in fp.readlines():
+        command = line.strip().split(':')
+        operation, value = command
+        if operation == 'INC':
+            h, t, doubling, m = table.add(int(value))
+            output.write(operation + ":" + value + "\n\n")
+            output.write(str(h) + " " + str(t) + "\n\n")
 
-print(hashing.table)
-print(hashing.remove(5))
+            if doubling:
+                output.write("DOBRAR TAM:" + str(m) + "\n\n")
+        elif operation == 'REM':
+            h, t, cleaning, halving, m = table.delete(int(value))
 
-print(hashing.table)
-print(hashing.search(5))
+            output.write(operation + ":" + value + "\n\n")
+            output.write(str(h) + " " + str(t) + "\n\n")
+
+            if halving:
+                output.write("METADE TAM:" + str(m) + "\n\n")
+
+            if cleaning:
+                output.write("LIMPAR\n")
+        elif operation == 'BUS':
+            h, t = table.search(int(value))
+
+            output.write(operation + ":" + value + "\n\n")
+            output.write(str(h) + " " + str(t) + "\n\n")
