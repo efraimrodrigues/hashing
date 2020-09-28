@@ -85,13 +85,8 @@ class hash_table:
         if m == 0:
             t = 0
             self.table.append(key)
-        else:
-            #Checks if it needs doubling
-            if m < (1 + self.e)*self.n:
-                print("Doubling")
-                self.doubling()
-                m = len(self.table)
 
+        if m > 0:
             h = self.hash(key)
 
             t = h % m
@@ -103,6 +98,12 @@ class hash_table:
                 i = i + 1
 
             self.table[t] = key
+
+        #Checks if it needs doubling
+        if m < (1 + self.e)*self.n:
+            print("Doubling")
+            self.doubling()
+            m = len(self.table)
 
         return h, t
 
@@ -150,11 +151,16 @@ class hash_table:
             return h, -1
 
 hashing = hash_table(8, 1)
+print(hashing.table)
 print(hashing.insert(5))
 
+print(hashing.table)
 print(hashing.insert(8))
+
+print(hashing.table)
 print(hashing.insert(5))
 
+print(hashing.table)
 print(hashing.remove(5))
 
 print(hashing.table)
