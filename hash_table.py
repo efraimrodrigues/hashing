@@ -1,4 +1,5 @@
-#halving when 1/4 of the table is being used
+#/usr/bin/python3
+
 #universe = 18.446.744.073.709.551.615
 import numpy as np
 import math
@@ -6,18 +7,19 @@ import random
 
 class hash_table:
 
-    def __init__(self, c, e):
-        self.q = 64
-        self.p = 13
-        self.c = c
-        self.e = e
+    def __init__(self, block_size = 8, e = 1, cleaning_threshold = 0.25):
+        self.q = 64 #Key size
+        self.block_size = block_size #Size of blocks the key will be split into
+        self.e = e #Doubling and halving constant parameter
         self.table = []
-        self.n = 0
-        self.tables = []
+        self.n = 0 #Number of elements in the table
+        self.r = 0 #Number of elements removed from the table
+        self.cleaning_threshold = cleaning_threshold #Threshold parameter for cleaning the table
+        self.lookup = [] #Lookup tables used for hashing the key
 
-        table_size = 2**self.c
-        for i in range(0, self.c):
-            self.tables.append(random.sample(range(table_size), table_size))
+        table_size = 2**self.block_size
+        for i in range(0, self.block_size):
+            self.lookup.append(random.sample(range(table_size), table_size))
 
     def __bin(self, key):
         b = [int(i) for i in list('{0:0b}'.format(key))]
@@ -28,8 +30,8 @@ class hash_table:
         if len(b) > self.q:
             raise Exception("Invalid key size.")
 
-        #Breaks binary array into chunks of size self.c
-        b = [b[i:i + self.c] for i in range(0, len(b), self.c)]
+        #Breaks binary array into blocks of size self.block_size
+        b = [b[i:i + self.block_size] for i in range(0, len(b), self.block_size)]
 
         return b
 
@@ -40,27 +42,27 @@ class hash_table:
         return x ^ y
 
     def __table(self, index, key):
-        return self.tables[index][key]
+        return self.lookup[index][key]
 
-    def doubling(self):
+    def __resize(self, size):
         old_table = self.table
 
         self.n = 0
-        self.table = [None] * len(old_table) * 2
+        self.r = 0
+        self.table = [None] * size
 
         for element in old_table:
             if element != None and not math.isnan(element):
                 self.insert(element)
 
-    def halving(self):
-        old_table = self.table
+    def __cleaning(self):
+        self.__resize(len(self.table))
 
-        self.n = 0
-        self.table = [None] * math.ceil(len(old_table) / 2)
+    def __doubling(self):
+        self.__resize(len(self.table) * 2)
 
-        for element in old_table:
-            if element != None and not math.isnan(element):
-                self.insert(element)
+    def __halving(self):
+        self.__resize(math.ceil(len(self.table) / 2))
 
     def hash(self, key):
         t = None
@@ -102,7 +104,7 @@ class hash_table:
         #Checks if it needs doubling
         if m < (1 + self.e)*self.n:
             print("Doubling")
-            self.doubling()
+            self.__doubling()
             m = len(self.table)
 
         return h, t
@@ -123,14 +125,19 @@ class hash_table:
 
         if self.table[t] == key:
             self.table[t] = float("NaN")
+            self.r = self.r + 1
         else:
             return h, -1
 
         #Checks if it needs halving
         if self.n < m/4:
             print("Halving.")
-            self.halving()
+            self.__halving()
 
+        #Checks if it needs cleaning
+        if self.r/m > self.cleaning_threshold:
+            print("Cleaning")
+            self.__cleaning
         return h, t
 
     def search(self, key):
@@ -141,21 +148,26 @@ class hash_table:
         i = 1
 
         #Linear probing
-        while self.table[t] != key and math.isnan(self.table[t]):
+        while self.table[t] != None and self.table[t] != key:
             t = (h + i) % m
-            i = i + 1
+
+            if self.table[t] != None:
+                i = i + 1
 
         if self.table[t] == key:
             return h, t
         else:
             return h, -1
 
-hashing = hash_table(8, 1)
+hashing = hash_table()
 print(hashing.table)
 print(hashing.insert(5))
 
 print(hashing.table)
 print(hashing.insert(8))
+
+print(hashing.table)
+print(hashing.insert(5))
 
 print(hashing.table)
 print(hashing.insert(5))
