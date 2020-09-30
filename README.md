@@ -27,7 +27,7 @@ INC:42
 INC:43
 ```
 
-Here's an example of how you can do it: 
+Here's an example of how you can do it if your input file is named input.txt: 
 
 `python3 hash_table.py input.txt`
 
