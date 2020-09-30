@@ -27,4 +27,8 @@ INC:42
 INC:43
 ```
 
-Here's an example of how you can do it: `python3 hash_table.py input.txt`. A file named output.txt with hashing values and table positions will be generated once you run it.
+Here's an example of how you can do it: 
+
+`python3 hash_table.py input.txt`
+
+A file named output.txt with hashing values and table positions will be generated once you run it.
