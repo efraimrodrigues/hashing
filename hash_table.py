@@ -7,9 +7,11 @@ import numpy as np
 import math
 import random
 
+from pair import pair
+
 class hash_table:
 
-    def __init__(self, block_size = 8, e = 1, cleaning_threshold = 0.25):
+    def __init__(self, block_size = 16, e = 0.5, cleaning_threshold = 0.15):
         self.__q = 64 #Key size
         self.__block_size = block_size #Size of blocks the key will be split into
         self.__e = e #Doubling and halving constant parameter
@@ -26,7 +28,7 @@ class hash_table:
             self.__lookup.append(random.sample(range(table_size), table_size))
 
     def __bin(self, key):
-        b = [int(i) for i in list('{0:0b}'.format(key))]
+        b = [int(i) for i in list('{0:0b}'.format(int(key)))]
 
         if len(b) < self.__q:
             b = [0] * (self.__q - len(b)) + b
@@ -56,7 +58,7 @@ class hash_table:
         self.table = [None] * size
 
         for element in old_table:
-            if element != None and not math.isnan(element):
+            if element != None and not math.isnan(element.get_key()):
                 self.add(element)
 
     def __cleaning(self):
@@ -81,24 +83,27 @@ class hash_table:
 
         return t
 
-    def add(self, key):
+    def get_n(self):
+        return self.__n
+
+    def add(self, entry):
         self.__n = self.__n + 1
 
         h = 0
         t = None
         m = len(self.table)
 
-        h = self.__hash(key)
+        h = self.__hash(entry.get_key())
 
         t = h % m
         i = 1
 
         #Linear probing
-        while self.table[t] != None and not math.isnan(self.table[t]):
+        while self.table[t] != None and not math.isnan(self.table[t].get_key()):
             t = (h + i) % m
             i = i + 1
 
-        self.table[t] = key
+        self.table[t] = entry
 
         doubling = False
         #Checks if it needs doubling
@@ -119,12 +124,12 @@ class hash_table:
         i = 1
 
         #Linear probing
-        while self.table[t] != None and self.table[t] != key and math.isnan(self.table[t]):
+        while self.table[t] != None and (self.table[t].get_key() != key or math.isnan(self.table[t].get_key())):
             t = (h + i) % m
             i = i + 1
 
-        if self.table[t] == key:
-            self.table[t] = float("NaN")
+        if self.table[t] != None and self.table[t].get_key() == key:
+            self.table[t] = pair(float("NaN"),float("NaN"))
             self.__r = self.__r + 1
         else:
             return [h, -1, False, False, m]
@@ -134,6 +139,7 @@ class hash_table:
         #Checks if it needs halving
         if self.__n < m/4:
             self.__halving()
+            m = len(self.table)
             halving = True
 
         #Checks if it needs cleaning
@@ -144,6 +150,9 @@ class hash_table:
         return [h, t, cleaning, halving, m]
 
     def search(self, key):
+        if key == None:
+            return None
+
         h = self.__hash(key)
         m = len(self.table)
 
@@ -151,14 +160,14 @@ class hash_table:
         i = 1
 
         #Linear probing
-        while self.table[t] != None and self.table[t] != key:
+        while self.table[t] != None and self.table[t].get_key() != key:
             t = (h + i) % m
 
             if self.table[t] != None:
                 i = i + 1
 
-        if self.table[t] == key:
-            return [h, t]
+        if self.table[t] != None and self.table[t].get_key() == key:
+            return [h, self.table[t].get_value()]
         else:
             return [h, -1]
 
@@ -173,7 +182,7 @@ with open(sys.argv[1]) as fp:
         command = line.strip().split(':')
         operation, value = command
         if operation == 'INC':
-            h, t, doubling, m = table.add(int(value))
+            h, t, doubling, m = table.add(pair(int(value), int(value)))
             output.write(operation + ":" + value + "\n\n")
             output.write(str(h) + " " + str(t) + "\n\n")
 
