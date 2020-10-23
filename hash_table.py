@@ -11,7 +11,7 @@ from pair import pair
 
 class hash_table:
 
-    def __init__(self, block_size = 16, e = 0.5, cleaning_threshold = 0.15):
+    def __init__(self, block_size = 8, e = 0.5, cleaning_threshold = 0.15, lookup = None):
         self.__q = 64 #Key size
         self.__block_size = block_size #Size of blocks the key will be split into
         self.__e = e #Doubling and halving constant parameter
@@ -24,8 +24,23 @@ class hash_table:
         self.debug = False #Debugging control
 
         table_size = 2**self.__block_size
-        for i in range(0, self.__block_size):
-            self.__lookup.append(random.sample(range(table_size), table_size))
+        if lookup is None:
+            universe = 2**64
+            for i in range(0, self.__block_size):
+                lookup_table = []
+                for i in range(table_size):
+                    lookup_table.append(random.randint(0, universe))
+
+                self.__lookup.append(lookup_table)
+        else:
+            if len(lookup) != self.__block_size:
+                raise Exception("Invalid lookup table.")
+            
+            for i in range(len(lookup)):
+                if len(lookup[i]) != table_size:
+                    raise Exception("[" + str(i) + "]" + " Invalid lookup table.")
+
+            self.__lookup = lookup
 
     def __bin(self, key):
         b = [int(i) for i in list('{0:0b}'.format(int(key)))]
@@ -85,6 +100,9 @@ class hash_table:
 
     def get_n(self):
         return self.__n
+
+    def get_lookup(self):
+        return self.__lookup
 
     def add(self, entry):
         self.__n = self.__n + 1
