@@ -162,7 +162,7 @@ class hash_table:
 
         #Checks if it needs cleaning
         if self.__r/m > self.__cleaning_threshold:
-            self.__cleaning
+            self.__cleaning()
             cleaning = True
 
         return [h, t, cleaning, halving, m]
