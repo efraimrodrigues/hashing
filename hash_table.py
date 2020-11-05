@@ -11,7 +11,7 @@ from pair import pair
 
 class hash_table:
 
-    def __init__(self, block_size = 8, e = 0.5, cleaning_threshold = 0.15, lookup = None):
+    def __init__(self, block_size = 8, e = 0.5, cleaning_threshold = 0.01, lookup = None):
         self.__q = 64 #Key size
         self.__block_size = block_size #Size of blocks the key will be split into
         self.__e = e #Doubling and halving constant parameter
@@ -183,6 +183,10 @@ class hash_table:
 
             if self.table[t] != None:
                 i = i + 1
+
+            #If the whole table has been scanned and the value wasn't found, return None
+            if i >= len(self.table):
+                return None
 
         if self.table[t] != None and self.table[t].get_key() == key:
             return [h, self.table[t].get_value()]
